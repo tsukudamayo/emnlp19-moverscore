@@ -147,11 +147,11 @@ def word_mover_score(refs, hyps, idf_dict_ref, idf_dict_hyp, stop_words=[], n_gr
                                 if w in stop_words or '##' in w
                                 or w in set(string.punctuation)]
           
-            ref_embedding[i, ref_ids,:] = 0                        
-            hyp_embedding[i, hyp_ids,:] = 0
+            ref_embedding[i, ref_ids,:] = float(0)
+            hyp_embedding[i, hyp_ids,:] = float(0)
             
-            ref_idf[i, ref_ids] = 0
-            hyp_idf[i, hyp_ids] = 0
+            ref_idf[i, ref_ids] = float(0)
+            hyp_idf[i, hyp_ids] = float(0)
             
         raw = torch.cat([ref_embedding, hyp_embedding], 1)
                              
