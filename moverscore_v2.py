@@ -163,13 +163,13 @@ def word_mover_score(refs, hyps, idf_dict_ref, idf_dict_hyp, stop_words=[], n_gr
         for i in range(batch_size):  
             c1 = np.zeros(raw.shape[1], dtype=np.float64)
             c2 = np.zeros(raw.shape[1], dtype=np.float64)
-            c1[:len(ref_idf[i])] = ref_idf[i]
-            c2[len(ref_idf[i]):] = hyp_idf[i]
+            c1[:len(ref_idf[i])] = ref_idf[i].astype(np.float64)
+            c2[len(ref_idf[i]):] = hyp_idf[i].astype(np.float64)
             
             c1 = _safe_divide(c1, np.sum(c1))
             c2 = _safe_divide(c2, np.sum(c2))
             
-            dst = distance_matrix[i].double().cpu().numpy()
+            dst = distance_matrix[i].double().cpu().numpy().astype(np.float64)
             _, flow = emd_with_flow(
                 c1.astype(np.float64),
                 c2.astype(np.float64),
