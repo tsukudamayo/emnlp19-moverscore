@@ -83,7 +83,7 @@ def collate_idf(arr, tokenize, numericalize, idf_dict,
     pad_token = numericalize([pad])[0]
 
     padded, lens, mask = padding(arr, pad_token, dtype=torch.long)
-    padded_idf, _, _ = padding(idf_weights, pad_token, dtype=torch.float64)
+    padded_idf, _, _ = padding(idf_weights, pad_token, dtype=torch.float)
     padded = padded.to(device=device)
     mask = mask.to(device=device)
     lens = lens.to(device=device)
@@ -112,8 +112,7 @@ def get_bert_embedding(all_sens, model, tokenizer, idf_dict,
     return total_embedding, lens, mask, padded_idf, tokens
 
 def _safe_divide(numerator, denominator):
-    epsilon = np.float64(1e-30)
-    return numerator / (denominator + epsilon)
+    return numerator / (denominator + 1e-30)
 
 def batched_cdist_l2(x1, x2):
     x1_norm = x1.pow(2).sum(dim=-1, keepdim=True)
@@ -147,11 +146,11 @@ def word_mover_score(refs, hyps, idf_dict_ref, idf_dict_hyp, stop_words=[], n_gr
                                 if w in stop_words or '##' in w
                                 or w in set(string.punctuation)]
           
-            ref_embedding[i, ref_ids,:] = float(0)
-            hyp_embedding[i, hyp_ids,:] = float(0)
+            ref_embedding[i, ref_ids,:] = 0                        
+            hyp_embedding[i, hyp_ids,:] = 0
             
-            ref_idf[i, ref_ids] = float(0)
-            hyp_idf[i, hyp_ids] = float(0)
+            ref_idf[i, ref_ids] = 0
+            hyp_idf[i, hyp_ids] = 0
             
         raw = torch.cat([ref_embedding, hyp_embedding], 1)
                              
@@ -160,8 +159,8 @@ def word_mover_score(refs, hyps, idf_dict_ref, idf_dict_hyp, stop_words=[], n_gr
         distance_matrix = batched_cdist_l2(raw, raw).double().cpu().numpy()
                 
         for i in range(batch_size):  
-            c1 = np.zeros(raw.shape[1], dtype=np.float64)
-            c2 = np.zeros(raw.shape[1], dtype=np.float64)
+            c1 = np.zeros(raw.shape[1], dtype=float)
+            c2 = np.zeros(raw.shape[1], dtype=float)
             c1[:len(ref_idf[i])] = ref_idf[i]
             c2[len(ref_idf[i]):] = hyp_idf[i]
             
@@ -170,7 +169,7 @@ def word_mover_score(refs, hyps, idf_dict_ref, idf_dict_hyp, stop_words=[], n_gr
             
             dst = distance_matrix[i]
             _, flow = emd_with_flow(c1, c2, dst)
-            flow = np.array(flow, dtype=np.float64)
+            flow = np.array(flow, dtype=np.float32)
             score = 1./(1. + np.sum(flow * dst))#1 - np.sum(flow * dst)
             preds.append(score)
 
@@ -199,8 +198,8 @@ def plot_example(is_flow, reference, translation, device='cuda:0'):
 
     
     i = 0
-    c1 = np.zeros(raw.shape[1], dtype=np.float64)
-    c2 = np.zeros(raw.shape[1], dtype=np.float64)
+    c1 = np.zeros(raw.shape[1], dtype=float)
+    c2 = np.zeros(raw.shape[1], dtype=float)
     c1[:len(ref_idf[i])] = ref_idf[i]
     c2[len(ref_idf[i]):] = hyp_idf[i]
     
@@ -211,7 +210,7 @@ def plot_example(is_flow, reference, translation, device='cuda:0'):
 
     if is_flow:        
         _, flow = emd_with_flow(c1, c2, dst)
-        new_flow = np.array(flow, dtype=np.float64)
+        new_flow = np.array(flow, dtype=np.float32)    
         res = new_flow[:len(ref_tokens[i]), len(ref_idf[i]): (len(ref_idf[i])+len(hyp_tokens[i]))]
     else:    
         res = 1./(1. + dst[:len(ref_tokens[i]), len(ref_idf[i]): (len(ref_idf[i])+len(hyp_tokens[i]))]) 
