@@ -169,11 +169,11 @@ def word_mover_score(refs, hyps, idf_dict_ref, idf_dict_hyp, stop_words=[], n_gr
             c1 = _safe_divide(c1, np.sum(c1))
             c2 = _safe_divide(c2, np.sum(c2))
             
-            dst = distance_matrix[i].astype(np.float64)
+            dst = distance_matrix[i]
             _, flow = emd_with_flow(
                 c1.astype(np.float64),
                 c2.astype(np.float64),
-                dst.astype(np.float64),
+                dst,
             )
             flow = np.array(flow, dtype=np.float64)
             score = 1./(1. + np.sum(flow * dst))#1 - np.sum(flow * dst)
