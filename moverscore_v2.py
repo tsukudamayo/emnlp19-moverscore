@@ -112,7 +112,9 @@ def get_bert_embedding(all_sens, model, tokenizer, idf_dict,
     return total_embedding, lens, mask, padded_idf, tokens
 
 def _safe_divide(numerator, denominator):
-    return numerator / (denominator + 1e-30)
+    numerator = np.array(numerator, dtype=np.float64)
+    denominator = np.array(denominator, dtype=np.float64)
+    return numerator / (denominator + np.float64(1e-30))
 
 def batched_cdist_l2(x1, x2):
     x1_norm = x1.pow(2).sum(dim=-1, keepdim=True)
@@ -159,17 +161,21 @@ def word_mover_score(refs, hyps, idf_dict_ref, idf_dict_hyp, stop_words=[], n_gr
         distance_matrix = batched_cdist_l2(raw, raw).double().cpu().numpy()
                 
         for i in range(batch_size):  
-            c1 = np.zeros(raw.shape[1], dtype=float)
-            c2 = np.zeros(raw.shape[1], dtype=float)
+            c1 = np.zeros(raw.shape[1], dtype=np.float64)
+            c2 = np.zeros(raw.shape[1], dtype=np.float64)
             c1[:len(ref_idf[i])] = ref_idf[i]
             c2[len(ref_idf[i]):] = hyp_idf[i]
             
             c1 = _safe_divide(c1, np.sum(c1))
             c2 = _safe_divide(c2, np.sum(c2))
             
-            dst = distance_matrix[i]
-            _, flow = emd_with_flow(c1, c2, dst)
-            flow = np.array(flow, dtype=np.float32)
+            dst = distance_matrix[i].double().cpu().numpy()
+            _, flow = emd_with_flow(
+                c1.astype(np.float64),
+                c2.astype(np.float64),
+                dst.astype(np.float64),
+            )
+            flow = np.array(flow, dtype=np.float64)
             score = 1./(1. + np.sum(flow * dst))#1 - np.sum(flow * dst)
             preds.append(score)
 
